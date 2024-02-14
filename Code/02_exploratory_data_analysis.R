@@ -41,3 +41,26 @@ ens <- ens %>%
             ~as.numeric(as.character(.))) %>% 
   mutate_if(is.not.Bool,
             ~factor(., levels = attr(., "labels"), label = names(attr(., "labels"))))
+
+# Descriptive table
+ens %>% 
+  setNames(labelsENS) %>% 
+  one_hot(.) %>% 
+  summarise_all(
+    list(
+      Valid = ~length(na.omit(.)),
+      `Mean /\nProp.` = ~mean(., na.rm = TRUE),
+      `Desviación estándar` = ~sd(., na.rm = TRUE),
+      Kurtosis = ~kurtosis(., na.rm = TRUE),
+      Skewness = ~skewness(., na.rm = TRUE),
+      Mínimum = ~min(., na.rm = TRUE),
+      q25 = ~quantile(., 0.25, na.rm = TRUE),
+      Median = ~median(., na.rm = TRUE),
+      q75 = ~quantile(., 0.75, na.rm = TRUE),
+      Maximum = ~max(., na.rm = TRUE)
+    )
+  ) %>% 
+  pivot_longer(cols = everything(),
+               names_to = c("Variable", ".value"),
+               names_pattern = "^(.*)_([^_]+)$") %>% 
+  flextable::flextable()
