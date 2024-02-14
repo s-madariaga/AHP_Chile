@@ -16,7 +16,7 @@ variables <- c("ld1", "ld2", "ld3", "prev_week", "hincpc_cat", "tobacco",
           "education", "partner", "dld", "ageg")
 
 ens <- ens_master %>% 
-  select(all_of(vars)) %>% 
+  select(all_of(variables)) %>% 
   as.data.table() %>%
   rename(man = sex)
 
