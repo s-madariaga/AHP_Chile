@@ -43,7 +43,7 @@ ens <- ens %>%
             ~factor(., levels = attr(., "labels"), label = names(attr(., "labels"))))
 
 # Descriptive table
-ens %>% 
+table_1 <- ens %>% 
   setNames(labelsENS) %>% 
   one_hot(.) %>% 
   summarise_all(
@@ -62,5 +62,9 @@ ens %>%
   ) %>% 
   pivot_longer(cols = everything(),
                names_to = c("Variable", ".value"),
-               names_pattern = "^(.*)_([^_]+)$") %>% 
+               names_pattern = "^(.*)_([^_]+)$")
+
+# Descriptive table simple preview      
+table_1 %>% 
   flextable::flextable()
+
