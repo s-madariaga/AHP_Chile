@@ -18,7 +18,7 @@ Research Repository: Alcohol Harm Paradox in the Chilean Context.
 - mltools
 - flextable
 
-# Next steps
+## Next steps
 
 - [x] Elaborate a table of descriptive statistics for each variable
 - [ ] Create missing values raster plot
