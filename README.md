@@ -27,4 +27,5 @@ Research Repository: Alcohol Harm Paradox in the Chilean Context.
 - [x] Create missing values raster plot
 - [ ] Review variables generation
 - [x] V-Crarmer matrix
+- [ ] Check for "sampling weight"
 
