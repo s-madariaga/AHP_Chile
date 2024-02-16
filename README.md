@@ -17,6 +17,9 @@ Research Repository: Alcohol Harm Paradox in the Chilean Context.
 - labelled
 - mltools
 - flextable
+- gt
+- gtExtra
+- DescTools
 
 ## Next steps
 
