@@ -18,6 +18,7 @@ variables <- c("ld1", "ld2", "ld3", "prev_week", "hincpc_cat", "tobacco",
 ens <- ens_master %>% 
   select(all_of(variables)) %>% 
   as.data.table() %>%
+  # Change the name of the variable "sex"
   rename(man = sex)
 
 # Custom the labels (avoid repeated labels)
