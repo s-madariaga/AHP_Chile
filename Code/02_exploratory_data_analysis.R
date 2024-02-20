@@ -21,6 +21,9 @@ ens <- ens_master %>%
   # Change the name of the variable "sex"
   rename(man = sex)
 
+# Quick overview of variables
+glimpse(ens)
+
 # Custom the labels (avoid repeated labels)
 Hmisc::label(ens$ld1) <- "Liver Damage 1"
 Hmisc::label(ens$ld2) <- "Liver Damage 2"
