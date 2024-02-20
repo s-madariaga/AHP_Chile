@@ -17,10 +17,15 @@ Research Repository: Alcohol Harm Paradox in the Chilean Context.
 - labelled
 - mltools
 - flextable
+- gt
+- gtExtra
+- DescTools
 
 ## Next steps
 
 - [x] Elaborate a table of descriptive statistics for each variable
-- [ ] Create missing values raster plot
+- [x] Create missing values raster plot
 - [ ] Review variables generation
-- [ ] V-Crarmer matrix
+- [x] V-Crarmer matrix
+- [ ] Check for "sampling weight"
+
