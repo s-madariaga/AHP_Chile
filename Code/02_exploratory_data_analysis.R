@@ -43,6 +43,9 @@ ens <- ens %>%
   mutate_if(is.not.Bool,
             ~factor(., levels = attr(., "labels"), label = names(attr(., "labels"))))
 
+# Prop function
+prop <- function(x){sum(x, na.rm = TRUE) / length(x)}
+
 # Descriptive table
 table_1 <- ens %>% 
   setNames(labelsENS) %>% 
@@ -50,7 +53,7 @@ table_1 <- ens %>%
   summarise_all(
     list(
       Valid = ~length(na.omit(.)),
-      Proportion = ~mean(., na.rm = TRUE)
+      Proportion = ~prop(.)
       # `Standard deviation` = ~sd(., na.rm = TRUE),
       # Kurtosis = ~kurtosis(., na.rm = TRUE),
       # Skewness = ~skewness(., na.rm = TRUE),
@@ -64,12 +67,6 @@ table_1 <- ens %>%
   pivot_longer(cols = everything(),
                names_to = c("Variable", ".value"),
                names_pattern = "^(.*)_([^_]+)$")
-
-# Descriptive table simple preview      
-table_1 %>% 
-  knitr::kable() %>% 
-  kableExtra::kable_styling(full_width = FALSE) %>% 
-  kableExtra::kable_classic()
 
 # Visualization
 table_1 %>% 
@@ -144,7 +141,7 @@ cramers_matrix %>%
     geom_text(aes(label = ifelse(value > 0.2, round(value, 2), ""))) +
     labs(fill = "Cramer's V \n", 
          title = "Cramer's V correlation matrix",
-         subtitle = "(V > 0.2)") +
+         subtitle = expression(Phi[c] > 0.2)) +
     theme_light() + 
     theme(legend.position = "right",
           plot.title = element_text(face = "bold", size = 15),
