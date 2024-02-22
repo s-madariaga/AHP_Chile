@@ -1,4 +1,8 @@
 
+# Start R sesion
+.rs.restartR()
+rm(list = ls())
+
 # Efficient method to install and load packages
 if(!require("pacman")) install.packages("pacman")
 
@@ -21,9 +25,6 @@ ens <- ens_master %>%
   # Change the name of the variable "sex"
   rename(man = sex)
 
-# Quick overview of variables
-glimpse(ens)
-
 # Custom the labels (avoid repeated labels)
 Hmisc::label(ens$ld1) <- "Liver Damage 1"
 Hmisc::label(ens$ld2) <- "Liver Damage 2"
@@ -37,6 +38,27 @@ Hmisc::label(ens$hincpc_cat) <- "Per capita household income"
 # Saving labels from ENS
 labelsENS <- sapply(ens, Hmisc::label)
 
+# Missings ----------------------------------------------------------------
+
+## First, check for codes of missing case tipology in data (e.g. -9999)
+lapply(ens, unique)
+
+## Missing data frequency (using processing data)
+table_missings <- ens %>% 
+  setNames(paste0(labelsENS, " (", names(.), ")")) %>% 
+  map_df(function(x) round(sum(is.na(x))*100 / nrow(.))) %>%  
+  gather("Variable", "% Missings")
+
+## Rasterplot Missing cases by id_row
+ens |> vis_miss()
+ens |> naniar::gg_miss_var()
+
+# Remove missings
+ens <- na.omit(ens)
+
+
+# Variables treatment -----------------------------------------------------
+
 # Variable treatment
 is.Bool <- function(x) all(na.omit(x) %in% c(0, 1))
 is.not.Bool <- function(x) !is.Bool(x)
@@ -47,20 +69,23 @@ ens <- ens %>%
   mutate_if(is.not.Bool,
             ~factor(., levels = attr(., "labels"), label = names(attr(., "labels"))))
 
+
+# Descriptive table -------------------------------------------------------
+
 # Prop function
 prop <- function(x){sum(x, na.rm = TRUE) / length(x)}
 
 # Descriptive table
 table_1 <- ens %>% 
   setNames(labelsENS) %>% 
-  one_hot(.) %>% 
+  one_hot(.) %>%
   summarise_all(
     list(
       Valid = ~length(na.omit(.)),
       Proportion = ~prop(.)
       # `Standard deviation` = ~sd(., na.rm = TRUE),
-      # Kurtosis = ~kurtosis(., na.rm = TRUE),
-      # Skewness = ~skewness(., na.rm = TRUE),
+      # Kurtosis = ~e1071::kurtosis(., na.rm = TRUE),
+      # Skewness = ~e1071::skewness(., na.rm = TRUE),
       # Mínimum = ~min(., na.rm = TRUE),
       # q25 = ~quantile(., 0.25, na.rm = TRUE),
       # Median = ~median(., na.rm = TRUE),
@@ -72,6 +97,8 @@ table_1 <- ens %>%
                names_to = c("Variable", ".value"),
                names_pattern = "^(.*)_([^_]+)$")
 
+
+
 # Visualization
 table_1 %>% 
   gt() %>% 
@@ -80,40 +107,12 @@ table_1 %>%
     subtitle = paste0("Encuesta Nacional de Salud, 2016, (N = ", nrow(ens),")")
   ) %>% 
   fmt_percent(columns = "Proportion") %>% 
-  gt_theme_538()
+  gt_theme_538() %>% 
+  gt_split()
 
 
-# Missing Data Cases and Distribution
 
-## Back to the original dataset
-ens_missAnalysis <- ens_master %>% select(all_of(variables))
-
-## First, check for codes of missing case tipology in data (e.g. -9999)
-lapply(mutate_all(ens_missAnalysis, ~as.numeric(as.character(.))), unique)
-
-## Missing data frequency (using processing data)
-table_missings <- ens %>% 
-  setNames(paste0(labelsENS, " (", names(.), ")")) %>% 
-  map_df(function(x) round(sum(is.na(x))*100 / nrow(.))) %>%  
-  gather("Variable", "% Missings")
-
-## Rasterplot Missing cases by id_row
-ens |> vis_miss()
-
-ens |> naniar::gg_miss_var()
-
-ens |> naniar::gg_miss_var(man)
-ens |> naniar::gg_miss_var(ageg)
-ens |> naniar::gg_miss_var(rural)
-ens |> naniar::gg_miss_var(education)
-
-ens |> naniar::gg_miss_var(prev_week)
-
-ens |> naniar::gg_miss_var(ld1)
-ens |> naniar::gg_miss_var(ld2)
-ens |> naniar::gg_miss_var(ld3)
-
-# V-cramer
+# Cramers V ---------------------------------------------------------------
 
 cramers_matrix <- matrix(NA, ncol(ens), ncol(ens), dimnames = list(names(ens), names(ens)))
 
@@ -124,20 +123,25 @@ for(i in 1:ncol(ens)) {
 }
 
 # Mostrar la matriz de Cramer's V
-cramers_matrix %>% 
-  as.data.frame() %>%
-  round(2) %>% 
-  setNames(labelsENS) %>%
-  mutate(variable = labelsENS) %>% 
-  relocate(variable) %>% 
-  gt() %>% 
-  tab_header(
-    title = "Cramer's V correlation matrix",
-    subtitle = paste0("Encuesta Nacional de Salud, 2016, (N = ", nrow(ens),")")
-  )
+cramers_melted <- reshape2::melt(cramers_matrix)
 
 # Crear el gráfico de calor con una paleta de colores invertida
+ggplot(cramers_melted, aes(Var1, Var2, fill=value)) +
+  geom_tile(linewidth=0.25, color="gray70") +
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(fill = "Cramer's V \n") +
+  theme_light() + 
+  theme(legend.position = "right",
+        panel.grid=element_blank(),
+        legend.title = element_text(size=10),
+        axis.title.y  = element_blank(),
+        axis.title.x  = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5),
+        panel.spacing = unit(0, "lines"),  # Eliminar espacios entre los cuadrados
+        plot.margin = unit(c(0, 0, 0, 0), "cm")
+        ) 
 
+# Crear el gráfico de calor con una paleta de colores invertida
 {
   gcramer <- ggplot(cramers_melted, aes(Var1, Var2, fill=value)) +
     geom_tile(linewidth=0.25, color="gray70") +
@@ -154,10 +158,10 @@ cramers_matrix %>%
           axis.title.y  = element_blank(),
           axis.title.x  = element_blank(),
           axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5),
-          panel.spacing = unit(0, "lines"))  # Eliminar espacios entre los cuadrados
+          panel.spacing = unit(0, "lines")) 
           # plot.margin = unit(c(0, 0, 0, 0), "cm")
      
 
   gcramer
-}
+  }
 
