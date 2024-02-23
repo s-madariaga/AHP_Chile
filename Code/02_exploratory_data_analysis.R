@@ -1,7 +1,8 @@
 
 # Start R sesion
-.rs.restartR()
 rm(list = ls())
+gc()
+cat("\14")
 
 # Efficient method to install and load packages
 if(!require("pacman")) install.packages("pacman")
@@ -82,35 +83,15 @@ table_1 <- ens %>%
   summarise_all(
     list(
       Valid = ~length(na.omit(.)),
-      Proportion = ~prop(.)
-      # `Standard deviation` = ~sd(., na.rm = TRUE),
-      # Kurtosis = ~e1071::kurtosis(., na.rm = TRUE),
-      # Skewness = ~e1071::skewness(., na.rm = TRUE),
-      # Mínimum = ~min(., na.rm = TRUE),
-      # q25 = ~quantile(., 0.25, na.rm = TRUE),
-      # Median = ~median(., na.rm = TRUE),
-      # q75 = ~quantile(., 0.75, na.rm = TRUE),
-      # Maximum = ~max(., na.rm = TRUE)
+      Percentage = ~prop(.)
     )
   ) %>% 
   pivot_longer(cols = everything(),
                names_to = c("Variable", ".value"),
                names_pattern = "^(.*)_([^_]+)$")
 
-
-
 # Visualization
-table_1 %>% 
-  gt() %>% 
-  tab_header(
-    title = "Descriptive statistics",
-    subtitle = paste0("Encuesta Nacional de Salud, 2016, (N = ", nrow(ens),")")
-  ) %>% 
-  fmt_percent(columns = "Proportion") %>% 
-  gt_theme_538() %>% 
-  gt_split()
-
-
+source("Code/table_1.r")
 
 # Cramers V ---------------------------------------------------------------
 
@@ -164,4 +145,5 @@ ggplot(cramers_melted, aes(Var1, Var2, fill=value)) +
 
   gcramer
   }
+
 
