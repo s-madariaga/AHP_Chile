@@ -1,8 +1,10 @@
 
 # Start R sesion
-rm(list = ls())
-gc()
+rm(list = ls()); gc()
 cat("\14")
+
+# Set options
+options(digits = 2)
 
 # Efficient method to install and load packages
 if(!require("pacman")) install.packages("pacman")
@@ -14,27 +16,71 @@ pacman::p_load(haven, data.table, tidyverse, e1071, visdat,
 # Load dataset
 ens_master <- read_stata("Input/NHS2016-17_newvars.dta")
 
-# Subsetting dataset
-variables <- c("ld1", "ld2", "ld3", "prev_week", "hincpc_cat", "tobacco",
-          "sex", "obesity", "diabetes", "smet", "depression", 
-          "health_insurance", "support", "rural",
-          "education", "partner", "dld", "ageg")
 
+# Creating new variables to add
+ens_master <- ens_master |>
+  mutate(dias_consumo_anio = 
+           case_when(m7p9 == 1 ~ 0, m7p9 == 2 ~ 6, m7p9 == 3 ~ 36, m7p9 == 4 ~ 130, m7p9 == 5 ~ 287),
+         tragos_dia = ifelse(m7p9 == 1, 0, m7p10b),
+         net_consumption = dias_consumo_anio*tragos_dia,
+         # risk_consumption,
+         hed1 = case_when(
+           (m7p11b %in% c(4, 5)  & sex == 0) ~ 0,
+           (m7p11b %in% c(1, 2, 3) & sex == 0) ~ 1,
+           (m7p11c %in% c(4, 5)  & sex == 1) ~ 0,
+           (m7p11c %in% c(1, 2, 3) & sex == 1) ~ 1
+         ),
+         hed2 = case_when(
+           sex == 0 ~ m7p11b,
+           sex == 1 ~ m7p11c
+         ),
+         former_drinkers = as.integer(m7p9 == 1 & m7p17 %in% c(2, 3))) |>
+  rename(man = sex,
+         frequency_consumption = m7p9)
+
+# Variables to choose in new dataset (by type)
+
+variables <- list(
+
+  # Sociodemographic variables
+  sociodemographic_factors = c("man", "age", "ageg", "rural", "education", "household_income", "hincpc_cat", "private_health", "health_insurance"),
+  
+  # Alcohol consumption
+  alcohol_consumption = c("prev_year", "prev_month", "prev_week", "sum_audit", "aud", "net_consumption", "frequency_consumption", "hed1", "hed2", "former_drinkers"), 
+  
+  # Comorbilities
+  comorbilities = c("obesity", "waist", "diabetes", "tobacco", "smet", "depression"),
+  
+  # Social Networks
+  social_networks = c("partner", "support"),
+  
+  # Dependent variable
+  dependent_variable = c("ld1", "ld2", "ld3", "dld")
+)
+
+
+# Subsetting dataset with this variables
 ens <- ens_master %>% 
-  select(all_of(variables)) %>% 
-  as.data.table() %>%
-  # Change the name of the variable "sex"
-  rename(man = sex)
+  select(all_of(as.vector(unlist(variables)))) %>% 
+  as.data.table()
 
 # Custom the labels (avoid repeated labels)
 Hmisc::label(ens$ld1) <- "Liver Damage 1"
 Hmisc::label(ens$ld2) <- "Liver Damage 2"
 Hmisc::label(ens$ld3) <- "Liver Damage 3"
 Hmisc::label(ens$man) <- "Man"
-Hmisc::label(ens$diabetes) <- "Diabetes"
-Hmisc::label(ens$depression) <- "Depression"
 Hmisc::label(ens$rural) <- "Rural area"
 Hmisc::label(ens$hincpc_cat) <- "Per capita household income"
+Hmisc::label(ens$sum_audit) <- "Audit"
+Hmisc::label(ens$net_consumption) <- "Net consumption"
+Hmisc::label(ens$hed1) <- "Heavy Episodic Drinking (binary)"
+Hmisc::label(ens$hed2) <- "Heavy Episodic Drinking (categoric)"
+Hmisc::label(ens$former_drinkers) <- "Former drinkers"
+Hmisc::label(ens$waist) <- "Waist circumference"
+Hmisc::label(ens$diabetes) <- "Diabetes"
+Hmisc::label(ens$depression) <- "Depression"
+Hmisc::label(ens$dld) <- "Diagnosis of Liver Damage"
+
 
 # Saving labels from ENS
 labelsENS <- sapply(ens, Hmisc::label)

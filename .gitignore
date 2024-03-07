@@ -3,3 +3,6 @@
 .Rproj.user
 .RData
 .Rhistory
+
+# temporary folders
+archived
